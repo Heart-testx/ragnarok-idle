@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ragnarok Idle V10.1 - Cloud & TXAdmin</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root { --bg-main: #1e272e; --box-bg: #ffffff; --primary: #0fb9b1; --danger: #eb3b5a; --text-dark: #2d3436; --border: #dfe6e9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; background-color: var(--bg-main); display: flex; justify-content: center; color: var(--text-dark); flex-direction: column; align-items: center; margin: 0;}
+        
+        .top-bar { width: 100%; max-width: 980px; background: #2d3436; color: white; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; flex-wrap: wrap; gap: 10px;}
+        .top-bar input { padding: 8px; border-radius: 4px; border: none; margin-right: 5px; width: 160px; }
+        .top-bar button { width: auto; padding: 8px 14px; margin: 0; background: #0fb9b1; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;}
+        
+        .container { width: 100%; max-width: 980px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; box-sizing: border-box;}
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } .full-width { grid-column: span 1 !important; } }
+        .box { background: var(--box-bg); padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); box-sizing: border-box;}
+        .full-width { grid-column: span 2; }
+        
+        h2, h3 { margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+        button { width: 100%; padding: 12px; margin: 6px 0; cursor: pointer; font-size: 14px; border: none; border-radius: 6px; font-weight: bold; color: white; transition: 0.2s; }
+        button:hover { filter: brightness(0.9); }
+        
+        .btn-farm { background-color: #3867d6; font-size: 16px; padding: 14px; }
+        .btn-auto { background-color: var(--danger); }
+        .btn-auto.active { background-color: #20bf6b; }
+        .val-zeny { color: #20bf6b; font-weight: bold; font-size: 22px; margin: 10px 0; }
+        .exp-bar-bg { background: #dfe6e9; height: 14px; border-radius: 7px; width: 100%; overflow: hidden; margin-top: 5px; border: 1px solid #b2bec3; }
+        .exp-bar-fill { background: #f1c40f; height: 100%; width: 0%; transition: 0.3s; }
+        
+        .tabs-menu { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+        .tabs-menu button { background: #34495e; flex: 1; margin: 0; padding: 10px 5px; font-size: 13px; min-width: 70px;}
+        .tabs-menu button.active { background: #0fb9b1 !important; }
+        
+        .rank-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; text-align: left; }
+        .rank-table th, .rank-table td { padding: 10px; border-bottom: 1px solid #dfe6e9; }
+        .rank-table th { background: #f1c40f; color: #2d3436; }
+        
+        .admin-panel { background: #2c3e50; color: white; padding: 15px; border-radius: 8px; border: 2px solid #e74c3c; }
+        .admin-panel input, .admin-panel select { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 4px; border: 1px solid #7f8c8d; box-sizing: border-box; }
+        
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: rgba(255, 255, 255, 0.95); color: #2d3436; padding: 12px 16px; border-radius: 8px; border-left: 6px solid; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="top-bar">
+    <div id="authGuestMode">
+        <span style="color:#f1c40f; margin-right:10px;">🔴 โหมดออฟไลน์ (ไม่บันทึกข้อมูล)</span>
+        <input type="email" id="loginEmail" placeholder="อีเมล (เช่น admin@game.com)">
+        <input type="password" id="loginPass" placeholder="รหัสผ่าน">
+        <button onclick="cloudAuth('login')">เข้าสู่ระบบ</button>
+        <button style="background:#8e44ad;" onclick="cloudAuth('register')">สมัครสมาชิก</button>
+    </div>
+    <div id="authLoggedMode" style="display:none; width: 100%; justify-content: space-between; align-items: center;">
+        <div>
+            🟢 ออนไลน์: <strong id="uiProfileEmail" style="color:#0fb9b1;">Player</strong> 
+            <small style="color:#bdc3c7; margin-left:10px;">(ระบบคลาวด์กำลังบันทึกอัตโนมัติ)</small>
+        </div>
+        <button style="background:#e74c3c;" onclick="cloudLogout()">ออกจากระบบ</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="box full-width" style="text-align: center;">
+        <h2>⚔️ Ragnarok Idle (Online & TXAdmin) ⚔️</h2>
+        <div class="val-zeny">💰 <span id="zeny">0</span> Zeny</div>
+        <div>
+            <strong>Lv.<span id="levelUI">1</span></strong> <span id="rebirthCountUI" style="color:#e67e22; font-weight:bold;"></span>
+            <div class="exp-bar-bg"><div id="expFill" class="exp-bar-fill"></div></div>
+            <small>EXP: <span id="expUI">0</span> / <span id="maxExpUI">100</span></small>
+        </div>
+    </div>
+
+    <div class="box">
+        <h3>🎮 หน้าต่างฟาร์มเลเวล</h3>
+        <button id="btnAttack" class="btn-farm" onclick="attackAction()">⚔️ โจมตีมอนสเตอร์</button>
+        <button id="autoBtn" class="btn-auto" onclick="toggleAutoFarm()">🤖 เปิดระบบบอทฟาร์ม</button>
+        <button style="background:#20bf6b;" onclick="sellAllTrash()">💰 ขายไอเทมขยะทั้งหมดให้ NPC</button>
+        <div id="log" style="background: #f1f2f6; padding: 12px; margin-top:10px; border-radius: 4px; font-size:13px; text-align:center; font-weight:bold;">เริ่มเกมได้ทันที!</div>
+    </div>
+
+    <div class="box">
+        <div class="tabs-menu" id="mainTabs">
+            <button id="btn-tab-inv" onclick="switchTab('inv')">🎒 ไอเทม</button>
+            <button id="btn-tab-stats" onclick="switchTab('stats')">📊 ตัวละคร</button>
+            <button id="btn-tab-ranking" onclick="switchTab('ranking')" style="background:#f39c12;">🏆 อันดับ</button>
+            <button id="btn-tab-admin" onclick="switchTab('admin')" style="background:#c0392b; display:none;">⚙️ TXAdmin</button>
+        </div>
+
+        <div id="tab-inv">
+            <h4>🎒 กระเป๋าเก็บของของคุณ</h4>
+            <p>📦 ขยะจากการฟาร์ม: <strong id="itemTrash" style="color:#7f8c8d;">0</strong> ชิ้น</p>
+            <p>🥚 Super Pet Egg: <strong id="itemSuperPetEgg" style="color:#9b59b6;">0</strong> ใบ</p>
+            <p>🛡️ Blacksmith Blessing: <strong id="itemBsBlessing" style="color:#3498db;">0</strong> ชิ้น</p>
+            <p>👑 Baphomet Card: <strong id="itemCardBapho" style="color:#e74c3c;">0</strong> ใบ</p>
+        </div>
+
+        <div id="tab-stats" style="display:none;">
+            <h4>📊 สเตตัสและระบบจุติ</h4>
+            <p>ระดับการจุติปัจจุบัน: <strong id="statRebirth" style="color:#e67e22;">0</strong> ครั้ง</p>
+            <p style="font-size:13px; color:#7f8c8d;">* เงื่อนไขการจุติ: จะต้องมีเลเวล 100 ขึ้นไป เมื่อกดแล้วเลเวลและเงินจะรีเซ็ต แต่ระดับจุติจะเพิ่มขึ้นเพื่อเพิ่มความโหดในเซิร์ฟเวอร์!</p>
+            <button style="background:#d35400;" onclick="triggerRebirth()">✨ กดจุติรับพลังเพิ่ม</button>
+        </div>
+
+        <div id="tab-ranking" style="display:none;">
+            <h4 style="color:#f39c12;">🏆 10 อันดับสูงสุดในเซิร์ฟเวอร์</h4>
+            <button style="background:#2980b9; padding:6px; font-size:12px;" onclick="fetchLeaderboard()">🔄 ดึงข้อมูลล่าสุด</button>
+            <table class="rank-table">
+                <thead><tr><th>อันดับ</th><th>ผู้เล่น</th><th>จุติ</th><th>เลเวล</th></tr></thead>
+                <tbody id="rankingList">
+                    <tr><td colspan="4" style="text-align:center;">กรุณาล็อกอินเพื่อดูอันดับในเซิร์ฟเวอร์</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="tab-admin" class="admin-panel" style="display:none;">
+            <h4 style="color:#e74c3c; margin:0 0 10px 0;">🛡️ แผงควบคุมระบบสำหรับ GM (TXAdmin)</h4>
+            
+            <label>⚡ เสกไอเทมเข้ากระเป๋าตัวละครทดสอบ:</label>
+            <select id="adminItemSelect">
+                <option value="superPetEgg">🥚 Super Pet Egg</option>
+                <option value="bsBlessing">🛡️ Blacksmith Blessing</option>
+                <option value="cardBapho">👑 Baphomet Card</option>
+            </select>
+            <input type="number" id="adminItemAmt" value="5" placeholder="ใส่จำนวน">
+            <button style="background:#27ae60;" onclick="adminGiveItem()">✅ ตกลง เสกไอเทม</button>
+            
+            <hr style="border-color:#7f8c8d; margin:15px 0;">
+            
+            <label>⚙️ ทางลัดสำหรับทดสอบระบบ (Skip-Test):</label>
+            <button style="background:#f1c40f; color:#2d3436;" onclick="adminSetLevel100()">⏫ ปรับเลเวลเป็น Lv.100 ทันที (เทสระบบจุติ)</button>
+            <button style="background:#e67e22;" onclick="adminAddZeny()">💰 เสกเงินเข้าตัว +10,000,000 Zeny</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =======================================================
+    // ⚙️ ขั้นตอนสำคัญ: นำรหัสตั้งค่าจาก Firebase Console มาวางด้านล่างนี้
+    // =======================================================
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // =======================================================
+    // 🛡️ ขั้นตอนสำคัญ: ตั้งค่า EMAIL ที่ต้องการให้เป็น ADMIN (TXAdmin)
+    // =======================================================
+    const ADMIN_EMAILS = ["admin@game.com", "gm@ragnarok.com"]; 
+
+    // เริ่มต้นเชื่อมต่อระบบ Firebase
+    let app, auth, db;
+    let currentUser = null;
+    try {
+        app = firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+    } catch (e) {
+        console.warn("ยังไม่ได้ใส่ข้อมูลตั้งค่า Firebase หรือคีย์ไม่ถูกต้อง กำลังรันโหมดออฟไลน์");
+    }
+
+    // โครงสร้างฐานข้อมูลของตัวละคร (Game State)
+    let state = {
+        level: 1, exp: 0, rebirthLvl: 0, zeny: 0,
+        inv: { trash: 0, superPetEgg: 0, bsBlessing: 0, cardBapho: 0 }
+    };
+    let isBotting = false; let autoTimer = null;
+
+    // ตรวจสอบสถานะการล็อกอินของผู้เล่น
+    if (auth) {
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('authGuestMode').style.display = 'none';
+                document.getElementById('authLoggedMode').style.display = 'flex';
+                document.getElementById('uiProfileEmail').innerText = user.email;
+                
+                // ตรวจสอบสิทธิ์อีเมลว่าเป็น Admin หรือไม่
+                if(ADMIN_EMAILS.includes(user.email)) {
+                    document.getElementById('btn-tab-admin').style.display = 'block';
+                    systemNotify("🛡️ ตรวจพบสิทธิ์ผู้ดูแลระบบ! เปิดใช้งานเมนู TXAdmin", "#c0392b");
+                } else {
+                    document.getElementById('btn-tab-admin').style.display = 'none';
+                }
+                loadCloudSave();
+            } else {
+                currentUser = null;
+                document.getElementById('authGuestMode').style.display = 'block';
+                document.getElementById('authLoggedMode').style.display = 'none';
+                document.getElementById('btn-tab-admin').style.display = 'none';
+                switchTab('inv');
+            }
+        });
+    }
+
+    // ฟังก์ชัน จัดการระบบสมัครสมาชิกและเข้าสู่ระบบ
+    async function cloudAuth(type) {
+        if(!auth) return alert("โปรดกรอก Firebase Config ในโค้ดก่อนใช้งานระบบนี้ครับ!");
+        let email = document.getElementById('loginEmail').value;
+        let pass = document.getElementById('loginPass').value;
+        if(!email || !pass) return alert("กรุณากรอกทั้งอีเมลและรหัสผ่านด้วยครับ");
+        
+        try {
+            if(type === 'login') {
+                await auth.signInWithEmailAndPassword(email, pass);
+                systemNotify("🔓 เข้าสู่ระบบสำเร็จ ยินดีต้อนรับกลับครับ!", "#20bf6b");
+            } else {
+                await auth.createUserWithEmailAndPassword(email, pass);
+                systemNotify("✨ สมัครสมาชิกสำเร็จ! ระบบสร้างคลาวด์เซฟใหม่ให้คุณแล้ว", "#8e44ad");
+                saveToCloud();
+            }
+        } catch (error) {
+            alert("เกิดข้อผิดพลาด: " + error.message);
+        }
+    }
+
+    function cloudLogout() { if(auth) auth.signOut(); }
+
+    // ฟังก์ชัน อัปเดตข้อมูลเซฟขึ้นคลาวด์ (Firebase Firestore)
+    async function saveToCloud() {
+        if(!currentUser || !db) return;
+        try {
+            await db.collection("users").doc(currentUser.uid).set({
+                email: currentUser.email,
+                level: state.level,
+                rebirthLvl: state.rebirthLvl,
+                zeny: state.zeny,
+                saveData: JSON.stringify(state),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) { console.error("Cloud Save Error: ", e); }
+    }
+
+    // ฟังก์ชัน ดึงคลาวด์เซฟมาเล่นต่อ
+    async function loadCloudSave() {
+        try {
+            let doc = await db.collection("users").doc(currentUser.uid).get();
+            if (doc.exists && doc.data().saveData) {
+                state = JSON.parse(doc.data().saveData);
+                updateUI();
+                systemNotify("☁️ ซิงค์เซฟล่าสุดจากเซิร์ฟเวอร์เสร็จสิ้น", "#3498db");
+            }
+        } catch (e) { console.error("Cloud Load Error", e); }
+    }
+
+    // ฟังก์ชัน ดึงตารางจัดอันดับผู้เล่น Ranking
+    async function fetchLeaderboard() {
+        if(!db) return alert("ไม่สามารถเปิดระบบได้เนื่องจากระบบคลาวด์ออฟไลน์");
+        let tbody = document.getElementById('rankingList');
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">กำลังดึงข้อมูลเรียงลำดับ...</td></tr>`;
+        
+        try {
+            let snapshot = await db.collection("users")
+                .orderBy("rebirthLvl", "desc")
+                .orderBy("level", "desc")
+                .limit(10).get();
+                
+            tbody.innerHTML = "";
+            let rank = 1;
+            snapshot.forEach(doc => {
+                let d = doc.data();
+                let displayEmail = d.email.split('@')[0];
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${rank}</td>
+                        <td>${displayEmail} ${rank === 1 ? '👑' : ''}</td>
+                        <td>${d.rebirthLvl} ครั้ง</td>
+                        <td>Lv.${d.level}</td>
+                    </tr>
+                `;
+                rank++;
+            });
+        } catch(e) {
+            console.error(e);
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">ดึงข้อมูลล้มเหลว (คุณอาจยังไม่ได้สร้างดัชนี Index ใน Firestore)</td></tr>`;
+        }
+    }
+
+    // =======================================================
+    // 🛠️ ส่วนคำสั่งของ TXAdmin ฟังก์ชันควบคุมระบบ (GM Command)
+    // =======================================================
+    function adminGiveItem() {
+        let item = document.getElementById('adminItemSelect').value;
+        let amt = parseInt(document.getElementById('adminItemAmt').value) || 1;
+        state.inv[item] = (state.inv[item] || 0) + amt;
+        systemNotify(`[TXAdmin] เสกไอเทม ${item} จำนวน ${amt} ชิ้นสำเร็จ!`, "#e74c3c");
+        updateUI(); saveToCloud();
+    }
+    
+    function adminSetLevel100() {
+        state.level = 100; state.exp = 0;
+        systemNotify(`[TXAdmin] ปรับเลเวลตัวละครเป็น 100 พร้อมทดสอบจุติ!`, "#e74c3c");
+        updateUI(); saveToCloud();
+    }
+
+    function adminAddZeny() {
+        state.zeny += 10000000;
+        systemNotify(`[TXAdmin] เสกเงินเข้าตัวละครสำเร็จ +10,000,000 Zeny`, "#e74c3c");
+        updateUI(); saveToCloud();
+    }
+
+    // =======================================================
+    // ระบบขับเคลื่อนตัวเกมหลัก (Game Mechanics)
+    // =======================================================
+    function attackAction() {
+        state.zeny += Math.floor(Math.random() * 40) + 10;
+        state.exp += 20;
+        if(Math.random() < 0.4) state.inv.trash++;
+        
+        // ตรวจสอบการอัปเลเวล
+        let nextLvlExp = state.level * 100;
+        if(state.exp >= nextLvlExp) {
+            state.exp = 0; state.level++;
+            systemNotify(`🎉 ยินดีด้วย เลเวลอัปเป็น Lv.${state.level} แล้ว!`, "#f1c40f");
+        }
+        document.getElementById("log").innerText = `⚔️ โจมตีสำเร็จ! ได้รับ EXP และเงิน Zeny`;
+        updateUI();
+    }
+
+    function toggleAutoFarm() {
+        isBotting = !isBotting;
+        if(autoTimer) clearInterval(autoTimer);
+        if(isBotting) autoTimer = setInterval(attackAction, 1000);
+        updateUI();
+    }
+
+    function sellAllTrash() {
+        if(state.inv.trash <= 0) return alert("ไม่มีไอเทมขยะให้ขายในกระเป๋า");
+        let cashGained = state.inv.trash * 50;
+        state.zeny += cashGained;
+        state.inv.trash = 0;
+        systemNotify(`💰 ขายขยะให้ NPC ทั้งหมด ได้รับเงินมา ${cashGained} Zeny`, "#20bf6b");
+        updateUI(); saveToCloud();
+    }
+
+    function triggerRebirth() {
+        if(state.level < 100) return alert("คุณต้องมีเลเวล 100 ขึ้นไปจึงจะทำสัญญารับการจุติพลังได้!");
+        state.rebirthLvl++; state.level = 1; state.exp = 0; state.zeny = 0;
+        systemNotify("✨ จุติสำเร็จ! พลังวิญญาณของคุณตื่นขึ้นแล้ว", "#d35400");
+        updateUI(); saveToCloud();
+    }
+
+    // ระบบสลับหน้าต่างแท็บเมนู
+    function switchTab(tabId) {
+        ['inv','stats','ranking','admin'].forEach(id => {
+            let el = document.getElementById(`tab-${id}`);
+            if(el) el.style.display = 'none';
+            let btn = document.getElementById(`btn-tab-${id}`);
+            if(btn) btn.classList.remove('active');
+        });
+        document.getElementById(`tab-${tabId}`).style.display = 'block';
+        document.getElementById(`btn-tab-${tabId}`).classList.add('active');
+        if(tabId === 'ranking') fetchLeaderboard();
+    }
+
+    // เรนเดอร์อัปเดตข้อมูลบนหน้าจอ
+    function updateUI() {
+        document.getElementById("zeny").innerText = state.zeny.toLocaleString();
+        document.getElementById("levelUI").innerText = state.level;
+        document.getElementById("statRebirth").innerText = state.rebirthLvl;
+        document.getElementById("rebirthCountUI").innerText = state.rebirthLvl > 0 ? `[จุติ ${state.rebirthLvl}]` : "";
+        document.getElementById("expUI").innerText = state.exp;
+        document.getElementById("maxExpUI").innerText = state.level * 100;
+        document.getElementById("expFill").style.width = (state.exp / (state.level * 100)) * 100 + "%";
+        
+        document.getElementById("itemTrash").innerText = state.inv.trash;
+        document.getElementById("itemSuperPetEgg").innerText = state.inv.superPetEgg || 0;
+        document.getElementById("itemBsBlessing").innerText = state.inv.bsBlessing || 0;
+        document.getElementById("itemCardBapho").innerText = state.inv.cardBapho || 0;
+        
+        let btn = document.getElementById("autoBtn");
+        btn.className = `btn-auto ${isBotting ? 'active' : ''}`;
+        btn.innerText = isBotting ? "🤖 ปิดระบบบอทฟาร์ม" : "🤖 เปิดระบบบอทฟาร์ม";
+    }
+
+    function systemNotify(msg, color="#0fb9b1") {
+        let container = document.getElementById('toast-container');
+        let toast = document.createElement('div'); toast.className = 'toast';
+        toast.style.borderLeftColor = color; toast.innerHTML = msg; container.appendChild(toast);
+        setTimeout(() => { toast.remove(); }, 3500);
+    }
+    
+    // ตั้งค่าบันทึกเซฟอัตโนมัติขึ้นคลาวด์ทุกๆ 10 วินาที
+    setInterval(saveToCloud, 10000);
+    updateUI(); switchTab('inv');
+</script>
+</body>
+</html>
