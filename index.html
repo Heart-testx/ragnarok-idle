@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ragnarok Idle V10.1 - Cloud & TXAdmin</title>
+    <title>Ragnarok Idle V10.5 - Usable Items & Pet Hatching</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -22,7 +22,7 @@
         .box { background: var(--box-bg); padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); box-sizing: border-box;}
         .full-width { grid-column: span 2; }
         
-        h2, h3 { margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+        h2, h3, h4 { margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
         button { width: 100%; padding: 12px; margin: 6px 0; cursor: pointer; font-size: 14px; border: none; border-radius: 6px; font-weight: bold; color: white; transition: 0.2s; }
         button:hover { filter: brightness(0.9); }
         
@@ -44,6 +44,20 @@
         .admin-panel { background: #2c3e50; color: white; padding: 15px; border-radius: 8px; border: 2px solid #e74c3c; }
         .admin-panel input, .admin-panel select { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 4px; border: 1px solid #7f8c8d; box-sizing: border-box; }
         
+        select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; margin-bottom: 10px;}
+        .equipment-status { background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #dfe6e9; margin-bottom: 10px; font-size: 14px; display: flex; justify-content: space-around; flex-wrap: wrap;}
+        .gacha-result { background: #2c3e50; color: #fff; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; margin-top: 10px; display: none; }
+
+        /* จัดหมวดหมู่ไอเทมและดีไซน์แถวปุ่มกดใช้งาน */
+        .inv-section { background: #f5f6fa; padding: 10px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #3498db; }
+        .inv-section h5 { margin: 0 0 8px 0; color: #2c3e50; font-size: 14px; border-bottom: 1px dashed #ced6e0; padding-bottom: 4px; }
+        .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; }
+        
+        .item-row { display: flex; justify-content: space-between; align-items: center; background: white; padding: 5px 8px; border-radius: 4px; border: 1px solid #dfe6e9; }
+        .btn-use { width: auto !important; padding: 2px 8px !important; margin: 0 !important; font-size: 11px !important; background: #20bf6b !important; border-radius: 4px; }
+        .btn-use.box-btn { background: #9b59b6 !important; }
+        .btn-use.egg-btn { background: #e67e22 !important; }
+
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .toast { background: rgba(255, 255, 255, 0.95); color: #2d3436; padding: 12px 16px; border-radius: 8px; border-left: 6px solid; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -55,8 +69,8 @@
 
 <div class="top-bar">
     <div id="authGuestMode">
-        <span style="color:#f1c40f; margin-right:10px;">🔴 โหมดออฟไลน์ (ไม่บันทึกข้อมูล)</span>
-        <input type="email" id="loginEmail" placeholder="อีเมล (เช่น admin@game.com)">
+        <span style="color:#f1c40f; margin-right:10px;">🔴 โหมดออฟไลน์ (ไม่เซฟคลาวด์)</span>
+        <input type="email" id="loginEmail" placeholder="อีเมล">
         <input type="password" id="loginPass" placeholder="รหัสผ่าน">
         <button onclick="cloudAuth('login')">เข้าสู่ระบบ</button>
         <button style="background:#8e44ad;" onclick="cloudAuth('register')">สมัครสมาชิก</button>
@@ -64,7 +78,7 @@
     <div id="authLoggedMode" style="display:none; width: 100%; justify-content: space-between; align-items: center;">
         <div>
             🟢 ออนไลน์: <strong id="uiProfileEmail" style="color:#0fb9b1;">Player</strong> 
-            <small style="color:#bdc3c7; margin-left:10px;">(ระบบคลาวด์กำลังบันทึกอัตโนมัติ)</small>
+            <small style="color:#bdc3c7; margin-left:10px;">(ระบบคลาวด์ซิงค์อัตโนมัติ)</small>
         </div>
         <button style="background:#e74c3c;" onclick="cloudLogout()">ออกจากระบบ</button>
     </div>
@@ -72,83 +86,183 @@
 
 <div class="container">
     <div class="box full-width" style="text-align: center;">
-        <h2>⚔️ Ragnarok Idle (Online & TXAdmin) ⚔️</h2>
+        <h2>⚔️ Ragnarok Idle (V10.5 - Active Items Edition) ⚔️</h2>
         <div class="val-zeny">💰 <span id="zeny">0</span> Zeny</div>
-        <div>
+        <div style="margin-bottom: 10px;">
             <strong>Lv.<span id="levelUI">1</span></strong> <span id="rebirthCountUI" style="color:#e67e22; font-weight:bold;"></span>
             <div class="exp-bar-bg"><div id="expFill" class="exp-bar-fill"></div></div>
             <small>EXP: <span id="expUI">0</span> / <span id="maxExpUI">100</span></small>
         </div>
+        <div class="equipment-status">
+            <div>🗡️ <strong>อาวุธ:</strong> <span id="weapRefineUI" style="color:#3867d6; font-weight:bold;">+0</span></div>
+            <div>🛡️ <strong>ชุดเกราะ:</strong> <span id="armRefineUI" style="color:#20bf6b; font-weight:bold;">+0</span></div>
+            <div>🐾 <strong>สัตว์เลี้ยง:</strong> <span id="activePetUI" style="color:#9b59b6; font-weight:bold;">ไม่มี</span></div>
+        </div>
     </div>
 
     <div class="box">
-        <h3>🎮 หน้าต่างฟาร์มเลเวล</h3>
-        <button id="btnAttack" class="btn-farm" onclick="attackAction()">⚔️ โจมตีมอนสเตอร์</button>
+        <h3>🗺️ เลือกสถานที่ฟาร์มเลเวล</h3>
+        <select id="mapSelect" onchange="changeMap()">
+            <option value="prontera">Prontera Field (Lv.1+) [ขยะ/แร่หมาป่า/กล่อง OBB]</option>
+            <option value="payon">Payon Cave (Lv.25+) [หิน Elunium/กล่อง OBB]</option>
+            <option value="orc">Orc Dungeon (Lv.50+) [หิน Oridecon/แร่เหล็ก/กล่อง OPB]</option>
+            <option value="glast">Glast Heim (Lv.80+) [Baphomet Card/ยาบลู/ไข่สัตว์เลี้ยงซูเปอร์]</option>
+        </select>
+
+        <button id="btnAttack" class="btn-farm" onclick="attackAction()">⚔️ โจมตีมอนสเตอร์ประจำแมพ</button>
         <button id="autoBtn" class="btn-auto" onclick="toggleAutoFarm()">🤖 เปิดระบบบอทฟาร์ม</button>
-        <button style="background:#20bf6b;" onclick="sellAllTrash()">💰 ขายไอเทมขยะทั้งหมดให้ NPC</button>
-        <div id="log" style="background: #f1f2f6; padding: 12px; margin-top:10px; border-radius: 4px; font-size:13px; text-align:center; font-weight:bold;">เริ่มเกมได้ทันที!</div>
+        <button style="background:#20bf6b;" onclick="sellAllTrash()">💰 ขายไอเทมขยะและแร่ดิบทั้งหมดให้ NPC</button>
+        <div id="log" style="background: #f1f2f6; padding: 12px; margin-top:10px; border-radius: 4px; font-size:13px; text-align:center; font-weight:bold;">เริ่มคลิกโจมตีเพื่อสะสมไอเทมได้เลย!</div>
     </div>
 
     <div class="box">
         <div class="tabs-menu" id="mainTabs">
             <button id="btn-tab-inv" onclick="switchTab('inv')">🎒 ไอเทม</button>
-            <button id="btn-tab-stats" onclick="switchTab('stats')">📊 ตัวละคร</button>
+            <button id="btn-tab-gacha" onclick="switchTab('gacha')" style="background:#e74c3c;">🎰 กาชา</button>
+            <button id="btn-tab-refine" onclick="switchTab('refine')" style="background:#9b59b6;">🔨 ตีบวก</button>
+            <button id="btn-tab-stats" onclick="switchTab('stats')">📊 จุติ</button>
             <button id="btn-tab-ranking" onclick="switchTab('ranking')" style="background:#f39c12;">🏆 อันดับ</button>
             <button id="btn-tab-admin" onclick="switchTab('admin')" style="background:#c0392b; display:none;">⚙️ TXAdmin</button>
         </div>
 
         <div id="tab-inv">
-            <h4>🎒 กระเป๋าเก็บของของคุณ</h4>
-            <p>📦 ขยะจากการฟาร์ม: <strong id="itemTrash" style="color:#7f8c8d;">0</strong> ชิ้น</p>
-            <p>🥚 Super Pet Egg: <strong id="itemSuperPetEgg" style="color:#9b59b6;">0</strong> ใบ</p>
-            <p>🛡️ Blacksmith Blessing: <strong id="itemBsBlessing" style="color:#3498db;">0</strong> ชิ้น</p>
-            <p>👑 Baphomet Card: <strong id="itemCardBapho" style="color:#e74c3c;">0</strong> ใบ</p>
+            <h4>🎒 คลังกระเป๋าสัมภาระ (คลิกใช้งานไอเทมได้ที่นี่)</h4>
+            
+            <div class="inv-section" style="border-left-color: #e74c3c;">
+                <h5>🧪 ไอเทมบริโภคฟื้นพลัง (Consumables)</h5>
+                <div class="inv-grid">
+                    <div class="item-row">🍎 Red Potion: <strong id="itemRedPotion">0</strong> <button class="btn-use" onclick="usePotion('redPotion', 80)">ใช้</button></div>
+                    <div class="item-row">🧪 White Potion: <strong id="itemWhitePotion">0</strong> <button class="btn-use" onclick="usePotion('whitePotion', 400)">ใช้</button></div>
+                    <div class="item-row">🧪 Blue Potion: <strong id="itemBluePotion">0</strong> <button class="btn-use" onclick="usePotion('bluePotion', 1200)">ใช้</button></div>
+                    <div class="item-row">🍇 Yggdrasil Berry: <strong id="itemYggBerry">0</strong> <button class="btn-use" onclick="usePotion('yggBerry', 5000)">ใช้</button></div>
+                </div>
+            </div>
+
+            <div class="inv-section" style="border-left-color: #9b59b6;">
+                <h5>📦 กล่องสุ่มสมบัติโบราณ (Lucky Boxes)</h5>
+                <div class="inv-grid">
+                    <div class="item-row" style="grid-column: span 2;">🔵 Old Blue Box (OBB): <strong id="itemObb">0</strong> ชิ้น <button class="btn-use box-btn" onclick="openBox('obb')">เปิดกล่อง</button></div>
+                    <div class="item-row" style="grid-column: span 2;">🟣 Old Purple Box (OPB): <strong id="itemOpb">0</strong> ชิ้น <button class="btn-use box-btn" onclick="openBox('opb')">เปิดกล่อง</button></div>
+                </div>
+            </div>
+
+            <div class="inv-section" style="border-left-color: #e67e22;">
+                <h5>🥚 ตั๋วสุ่มและไข่สิ่งมีชีวิต (Gacha & Eggs)</h5>
+                <div class="inv-grid">
+                    <div class="item-row" style="grid-column: span 2;">🎟️ Gacha Ticket: <strong id="itemTicket">0</strong> ใบ <small style="color:#7f8c8d;">(ใช้ที่แท็บกาชา)</small></div>
+                    <div class="item-row">🥚 Normal Pet Egg: <strong id="itemPetEgg">0</strong> <button class="btn-use egg-btn" onclick="hatchPet('normal')">ฟัก</button></div>
+                    <div class="item-row">🥚 Super Pet Egg: <strong id="itemSuperPetEgg">0</strong> <button class="btn-use egg-btn" onclick="hatchPet('super')">ฟัก</button></div>
+                </div>
+            </div>
+
+            <div class="inv-section" style="border-left-color: #3498db;">
+                <h5>💎 หินตีบวกและแร่วัตถุดิบ (Refine & Materials)</h5>
+                <div class="inv-grid">
+                    <div class="item-row">Rough Ori: <strong id="itemRoughOri">0</strong></div>
+                    <div class="item-row">Rough Elu: <strong id="itemRoughElu">0</strong></div>
+                    <div class="item-row">Oridecon: <strong id="itemOri">0</strong></div>
+                    <div class="item-row">Elunium: <strong id="itemElu">0</strong></div>
+                    <div class="item-row">Iron Ore: <strong id="itemIron">0</strong></div>
+                    <div class="item-row">Steel: <strong id="itemSteel">0</strong></div>
+                    <div class="item-row" style="grid-column: span 2;">🛡️ Blacksmith Blessing: <strong id="itemBsBlessing">0</strong></div>
+                    <div class="item-row" style="grid-column: span 2;">📦 Jellopy / ไอเทมขยะฟาร์ม: <strong id="itemTrash">0</strong></div>
+                </div>
+            </div>
+
+            <div class="inv-section" style="border-left-color: #f1c40f;">
+                <h5>🃏 การ์ดมอนสเตอร์สะสมพลังพลังงาน (Monster Cards)</h5>
+                <div class="inv-grid">
+                    <div>Poring Card: <strong id="itemCardPoring">0</strong></div>
+                    <div>Wolf Card: <strong id="itemCardWolf">0</strong></div>
+                    <div>Orc Hero Card: <strong id="itemCardOrc">0</strong></div>
+                    <div>Baphomet Card: <strong id="itemCardBapho">0</strong></div>
+                    <div>Angeling Card: <strong id="itemCardAngel">0</strong></div>
+                    <div>GTB Card: <strong id="itemCardGtb">0</strong></div>
+                </div>
+            </div>
+
+            <div class="inv-section" style="border-left-color: #10ac84;">
+                <h5>👑 อุปกรณ์ระดับมหาเทพยุคคลาสสิก (Godly Items)</h5>
+                <div class="inv-grid">
+                    <div>Godly Sword: <strong id="itemGodSword">0</strong></div>
+                    <div>Godly Shield: <strong id="itemGodShield">0</strong></div>
+                    <div style="grid-column: span 2;">Mjolnir (ค้อนสายฟ้า): <strong id="itemMjolnir">0</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-gacha" style="display:none;">
+            <h4>🎰 ตู้สุ่มกาชาพอนแองเจลลิ่ง</h4>
+            <button style="background:#ff4757;" onclick="playGacha('ticket')">🎫 ใช้ Gacha Ticket x1 ใบสุ่ม</button>
+            <button style="background:#2980b9;" onclick="playGacha('zeny')">💰 ใช้เงิน 100,000 Zeny สุ่ม</button>
+            <div id="gachaResultDisplay" class="gacha-result"></div>
+        </div>
+
+        <div id="tab-refine" style="display:none;">
+            <h4>🔨 โรงตีบวกพรอนเทร่า</h4>
+            <select id="refineTarget">
+                <option value="weapon">🗡️ อาวุธประจำกาย (ใช้ Oridecon)</option>
+                <option value="armor">🛡️ ชุดเกราะป้องกัน (ใช้ Elunium)</option>
+            </select>
+            <p><input type="checkbox" id="useBsBlessingCheckbox"> บังคับใช้ Blacksmith Blessing ป้องกันไอเทมลดระดับเมื่อล้มเหลว</p>
+            <button style="background:#9b59b6;" onclick="processRefine()">🔨 เริ่มต้นตีบวกอุปกรณ์ (50,000 Zeny)</button>
         </div>
 
         <div id="tab-stats" style="display:none;">
-            <h4>📊 สเตตัสและระบบจุติ</h4>
-            <p>ระดับการจุติปัจจุบัน: <strong id="statRebirth" style="color:#e67e22;">0</strong> ครั้ง</p>
-            <p style="font-size:13px; color:#7f8c8d;">* เงื่อนไขการจุติ: จะต้องมีเลเวล 100 ขึ้นไป เมื่อกดแล้วเลเวลและเงินจะรีเซ็ต แต่ระดับจุติจะเพิ่มขึ้นเพื่อเพิ่มความโหดในเซิร์ฟเวอร์!</p>
+            <h4>📊 ระบบจุติสถิติมหาเทพ</h4>
+            <p>จำนวนครั้งที่จุติสำเร็จ: <strong id="statRebirth" style="color:#e67e22;">0</strong> ครั้ง</p>
             <button style="background:#d35400;" onclick="triggerRebirth()">✨ กดจุติรับพลังเพิ่ม</button>
         </div>
 
         <div id="tab-ranking" style="display:none;">
             <h4 style="color:#f39c12;">🏆 10 อันดับสูงสุดในเซิร์ฟเวอร์</h4>
-            <button style="background:#2980b9; padding:6px; font-size:12px;" onclick="fetchLeaderboard()">🔄 ดึงข้อมูลล่าสุด</button>
             <table class="rank-table">
                 <thead><tr><th>อันดับ</th><th>ผู้เล่น</th><th>จุติ</th><th>เลเวล</th></tr></thead>
-                <tbody id="rankingList">
-                    <tr><td colspan="4" style="text-align:center;">กรุณาล็อกอินเพื่อดูอันดับในเซิร์ฟเวอร์</td></tr>
-                </tbody>
+                <tbody id="rankingList"></tbody>
             </table>
         </div>
 
-        <div id="tab-admin" class="admin-panel" style="display:none;">
-            <h4 style="color:#e74c3c; margin:0 0 10px 0;">🛡️ แผงควบคุมระบบสำหรับ GM (TXAdmin)</h4>
-            
-            <label>⚡ เสกไอเทมเข้ากระเป๋าตัวละครทดสอบ:</label>
-            <select id="adminItemSelect">
-                <option value="superPetEgg">🥚 Super Pet Egg</option>
-                <option value="bsBlessing">🛡️ Blacksmith Blessing</option>
-                <option value="cardBapho">👑 Baphomet Card</option>
-            </select>
-            <input type="number" id="adminItemAmt" value="5" placeholder="ใส่จำนวน">
-            <button style="background:#27ae60;" onclick="adminGiveItem()">✅ ตกลง เสกไอเทม</button>
-            
-            <hr style="border-color:#7f8c8d; margin:15px 0;">
-            
-            <label>⚙️ ทางลัดสำหรับทดสอบระบบ (Skip-Test):</label>
-            <button style="background:#f1c40f; color:#2d3436;" onclick="adminSetLevel100()">⏫ ปรับเลเวลเป็น Lv.100 ทันที (เทสระบบจุติ)</button>
-            <button style="background:#e67e22;" onclick="adminAddZeny()">💰 เสกเงินเข้าตัว +10,000,000 Zeny</button>
+       <div id="tab-admin" class="admin-panel">
+    <h4 style="color:#ff7675; margin:0 0 10px 0;">🛡️ TXAdmin V10.5 (Emergency Admin Console)</h4>
+    <p style="font-size: 12px; color: #dfe6e9;">ใช้สำหรับแก้ไขสถานะผู้เล่นที่บัค หรือกู้คืนไอเทมให้ผู้เล่นที่ไอเทมหาย</p>
+    
+    <div style="background: #34495e; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+        <label>👤 ระบุเป้าหมาย (Email ผู้เล่น):</label>
+        <input type="text" id="adminTargetEmail" placeholder="ระบุอีเมลผู้เล่นที่ต้องการแก้ไข">
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+            <label>🔼 ปรับเลเวล:</label>
+            <input type="number" id="adminSetLvl" placeholder="เช่น 100">
         </div>
+        <div>
+            <label>✨ ปรับจุติ:</label>
+            <input type="number" id="adminSetRebirth" placeholder="เช่น 23">
+        </div>
+    </div>
+    <button style="background:#e67e22;" onclick="adminUpdateStats()">💾 อัปเดตสถานะผู้เล่นคนนี้</button>
+
+    <hr style="border-color:#7f8c8d; margin:15px 0;">
+
+    <label>🎒 เสกไอเทมคืนให้ผู้เล่น:</label>
+    <select id="adminItemSelect">
+        <option value="godSword">🗡️ Godly Sword</option>
+        <option value="mjolnir">⚡ Mjolnir</option>
+        <option value="cardBapho">🃏 Baphomet Card</option>
+        <option value="cardAngel">🃏 Angeling Card</option>
+        <option value="obb">🔵 Old Blue Box</option>
+        <option value="opb">🟣 Old Purple Box</option>
+        <option value="bsBlessing">🛡️ Blacksmith Blessing</option>
+    </select>
+    <input type="number" id="adminItemAmt" value="1" placeholder="จำนวน">
+    <button style="background:#27ae60;" onclick="adminGiveItemToTarget()">✅ เสกไอเทมเข้าตัวผู้เล่น</button>
+	</div>
     </div>
 </div>
 
 <script>
-    // =======================================================
-    // ⚙️ ขั้นตอนสำคัญ: นำรหัสตั้งค่าจาก Firebase Console มาวางด้านล่างนี้
-    // =======================================================
- const firebaseConfig = {
+    const firebaseConfig = {
         apiKey: "AIzaSyD0DX6a0j9EEUI4-qJjViSIQw0VpWQxDVQ",
         authDomain: "ragnarok-idle-9f771.firebaseapp.com",
         projectId: "ragnarok-idle-9f771",
@@ -157,30 +271,32 @@
         appId: "1:707272291723:web:cc44d38a61db309fca2b8e"
     };
 
-    // =======================================================
-    // 🛡️ ขั้นตอนสำคัญ: ตั้งค่า EMAIL ที่ต้องการให้เป็น ADMIN (TXAdmin)
-    // =======================================================
     const ADMIN_EMAILS = ["thiraphatttkk@gmail.com", "gm@ragnarok.com"]; 
+    let app, auth, db, currentUser = null;
+    try { app = firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.firestore(); } catch (e) { }
 
-    // เริ่มต้นเชื่อมต่อระบบ Firebase
-    let app, auth, db;
-    let currentUser = null;
-    try {
-        app = firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        db = firebase.firestore();
-    } catch (e) {
-        console.warn("ยังไม่ได้ใส่ข้อมูลตั้งค่า Firebase หรือคีย์ไม่ถูกต้อง กำลังรันโหมดออฟไลน์");
-    }
-
-    // โครงสร้างฐานข้อมูลของตัวละคร (Game State)
+    // คลังข้อมูลเกมแบบกระจายไอเทมใช้งานครบถ้วน
     let state = {
-        level: 1, exp: 0, rebirthLvl: 0, zeny: 0,
-        inv: { trash: 0, superPetEgg: 0, bsBlessing: 0, cardBapho: 0 }
+        level: 1, exp: 0, rebirthLvl: 0, zeny: 100000, currentMap: 'prontera',
+        refine: { weapon: 0, armor: 0 },
+        activePet: "ไม่มี", petBonus: { exp: 0, zeny: 0 },
+        inv: {
+            trash: 0, iron: 0, steel: 0, roughOri: 0, roughElu: 0, ori: 5, elu: 5, bsBlessing: 2,
+            redPotion: 10, whitePotion: 5, bluePotion: 2, yggBerry: 0,
+            obb: 3, opb: 1, ticket: 5, petEgg: 1, superPetEgg: 0,
+            cardPoring: 0, cardWolf: 0, cardOrc: 0, cardBapho: 0, cardAngel: 0, cardGtb: 0,
+            godSword: 0, godShield: 0, mjolnir: 0
+        }
     };
     let isBotting = false; let autoTimer = null;
 
-    // ตรวจสอบสถานะการล็อกอินของผู้เล่น
+    const mapsData = {
+        prontera: { name: "Prontera Field", reqLvl: 1, expGained: 15, zenyMin: 15, zenyMax: 35, drop: "trash", rate: 0.5 },
+        payon: { name: "Payon Cave", reqLvl: 25, expGained: 75, zenyMin: 50, zenyMax: 110, drop: "roughElu", rate: 0.25 },
+        orc: { name: "Orc Dungeon", reqLvl: 50, expGained: 230, zenyMin: 120, zenyMax: 280, drop: "iron", rate: 0.3 },
+        glast: { name: "Glast Heim", reqLvl: 80, expGained: 900, zenyMin: 400, zenyMax: 950, drop: "special", rate: 0.1 }
+    };
+
     if (auth) {
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -188,215 +304,464 @@
                 document.getElementById('authGuestMode').style.display = 'none';
                 document.getElementById('authLoggedMode').style.display = 'flex';
                 document.getElementById('uiProfileEmail').innerText = user.email;
-                
-                // ตรวจสอบสิทธิ์อีเมลว่าเป็น Admin หรือไม่
-                if(ADMIN_EMAILS.includes(user.email)) {
-                    document.getElementById('btn-tab-admin').style.display = 'block';
-                    systemNotify("🛡️ ตรวจพบสิทธิ์ผู้ดูแลระบบ! เปิดใช้งานเมนู TXAdmin", "#c0392b");
-                } else {
-                    document.getElementById('btn-tab-admin').style.display = 'none';
-                }
+                if(ADMIN_EMAILS.includes(user.email)) document.getElementById('btn-tab-admin').style.display = 'block';
                 loadCloudSave();
             } else {
                 currentUser = null;
                 document.getElementById('authGuestMode').style.display = 'block';
                 document.getElementById('authLoggedMode').style.display = 'none';
-                document.getElementById('btn-tab-admin').style.display = 'none';
                 switchTab('inv');
             }
         });
     }
 
-    // ฟังก์ชัน จัดการระบบสมัครสมาชิกและเข้าสู่ระบบ
     async function cloudAuth(type) {
-        if(!auth) return alert("โปรดกรอก Firebase Config ในโค้ดก่อนใช้งานระบบนี้ครับ!");
         let email = document.getElementById('loginEmail').value;
         let pass = document.getElementById('loginPass').value;
-        if(!email || !pass) return alert("กรุณากรอกทั้งอีเมลและรหัสผ่านด้วยครับ");
-        
+        if(!email || !pass) return alert("กรุณาป้อนข้อมูลให้ครบถ้วน");
         try {
-            if(type === 'login') {
-                await auth.signInWithEmailAndPassword(email, pass);
-                systemNotify("🔓 เข้าสู่ระบบสำเร็จ ยินดีต้อนรับกลับครับ!", "#20bf6b");
-            } else {
-                await auth.createUserWithEmailAndPassword(email, pass);
-                systemNotify("✨ สมัครสมาชิกสำเร็จ! ระบบสร้างคลาวด์เซฟใหม่ให้คุณแล้ว", "#8e44ad");
-                saveToCloud();
-            }
-        } catch (error) {
-            alert("เกิดข้อผิดพลาด: " + error.message);
-        }
+            if(type === 'login') await auth.signInWithEmailAndPassword(email, pass);
+            else { await auth.createUserWithEmailAndPassword(email, pass); saveToCloud(); }
+            systemNotify("🔓 จัดการระบบบัญชีผู้เล่นเรียบร้อย", "#20bf6b");
+        } catch (error) { alert(error.message); }
     }
 
     function cloudLogout() { if(auth) auth.signOut(); }
 
-    // ฟังก์ชัน อัปเดตข้อมูลเซฟขึ้นคลาวด์ (Firebase Firestore)
     async function saveToCloud() {
         if(!currentUser || !db) return;
         try {
             await db.collection("users").doc(currentUser.uid).set({
-                email: currentUser.email,
-                level: state.level,
-                rebirthLvl: state.rebirthLvl,
-                zeny: state.zeny,
-                saveData: JSON.stringify(state),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                email: currentUser.email, level: state.level, rebirthLvl: state.rebirthLvl, zeny: state.zeny,
+                saveData: JSON.stringify(state), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
-        } catch (e) { console.error("Cloud Save Error: ", e); }
+        } catch (e) { }
     }
 
-    // ฟังก์ชัน ดึงคลาวด์เซฟมาเล่นต่อ
     async function loadCloudSave() {
         try {
             let doc = await db.collection("users").doc(currentUser.uid).get();
             if (doc.exists && doc.data().saveData) {
-                state = JSON.parse(doc.data().saveData);
+                state = Object.assign(state, JSON.parse(doc.data().saveData));
                 updateUI();
-                systemNotify("☁️ ซิงค์เซฟล่าสุดจากเซิร์ฟเวอร์เสร็จสิ้น", "#3498db");
+                document.getElementById('mapSelect').value = state.currentMap || 'prontera';
+                systemNotify("☁️ ซิงค์ดาต้าและระบบฟักไข่เสร็จสิ้น", "#3498db");
             }
-        } catch (e) { console.error("Cloud Load Error", e); }
+        } catch (e) { }
     }
 
-    // ฟังก์ชัน ดึงตารางจัดอันดับผู้เล่น Ranking
-    async function fetchLeaderboard() {
-        if(!db) return alert("ไม่สามารถเปิดระบบได้เนื่องจากระบบคลาวด์ออฟไลน์");
-        let tbody = document.getElementById('rankingList');
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">กำลังดึงข้อมูลเรียงลำดับ...</td></tr>`;
+    // =======================================================
+    // 🧪 ⚡ ระบบจัดการไอเทมเปิดใช้งาน (Active Items Mechanics)
+    // =======================================================
+    
+    // ฟังก์ชันกดดื่มยา Potion ต่างๆ
+    function usePotion(potionType, expGained) {
+        if ((state.inv[potionType] || 0) < 1) return alert("คุณไม่มีไอเทมชิ้นนี้เหลืออยู่ในกระเป๋า");
+        state.inv[potionType]--;
+        state.exp += expGained;
         
-        try {
-            let snapshot = await db.collection("users")
-                .orderBy("rebirthLvl", "desc")
-                .orderBy("level", "desc")
-                .limit(10).get();
-                
-            tbody.innerHTML = "";
-            let rank = 1;
-            snapshot.forEach(doc => {
-                let d = doc.data();
-                let displayEmail = d.email.split('@')[0];
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${rank}</td>
-                        <td>${displayEmail} ${rank === 1 ? '👑' : ''}</td>
-                        <td>${d.rebirthLvl} ครั้ง</td>
-                        <td>Lv.${d.level}</td>
-                    </tr>
-                `;
-                rank++;
-            });
-        } catch(e) {
-            console.error(e);
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">ดึงข้อมูลล้มเหลว (คุณอาจยังไม่ได้สร้างดัชนี Index ใน Firestore)</td></tr>`;
+        let nextLvlExp = state.level * 100;
+        if(state.exp >= nextLvlExp) { state.exp = 0; state.level++; }
+        
+        systemNotify(`🧪 ดื่มไอเทมฟื้นฟู ได้รับค่าประสบการณ์ +${expGained} EXP ทันที!`, "#20bf6b");
+        updateUI(); saveToCloud();
+    }
+
+    // ฟังก์ชันกดเปิดกล่องสุ่มสมบัติ OBB / OPB
+    function openBox(boxType) {
+        if ((state.inv[boxType] || 0) < 1) return alert("คุณไม่มีกล่องนี้เหลืออยู่");
+        state.inv[boxType]--;
+
+        let roll = Math.random();
+        let rewardMsg = "";
+
+        if (boxType === 'obb') {
+            if(roll < 0.1) { state.inv.ticket++; rewardMsg = "🎟️ ได้รับ Gacha Ticket x1 ใบ"; }
+            else if(roll < 0.4) { state.inv.ori += 2; rewardMsg = "💎 ได้รับ Oridecon x2 ก้อน"; }
+            else if(roll < 0.7) { state.inv.whitePotion += 5; rewardMsg = "🧪 ได้รับ White Potion x5 ขวด"; }
+            else { state.inv.trash += 20; rewardMsg = "📦 ได้รับ Jellopy x20 ชิ้น"; }
+        } else if (boxType === 'opb') {
+            if(roll < 0.05) { state.inv.godSword++; rewardMsg = "🗡️ โคตรเฮง!! ได้รับอาวุธระดับเทพ Godly Sword"; }
+            else if(roll < 0.2) { state.inv.bsBlessing += 2; rewardMsg = "🛡️ ได้รับ Blacksmith Blessing x2 ใบ"; }
+            else if(roll < 0.5) { state.inv.yggBerry += 2; rewardMsg = "🍇 ได้รับ Yggdrasil Berry x2 ลูก"; }
+            else { state.inv.elu += 3; rewardMsg = "💎 ได้รับ Elunium x3 ก้อน"; }
+        }
+
+        systemNotify(`📦 แกะกล่อง ${boxType.toUpperCase()} สำเร็จ: ${rewardMsg}`, "#9b59b6");
+        updateUI(); saveToCloud();
+    }
+
+    // ระบบฟักไข่สัตว์เลี้ยง (Pet Hatching System)
+    function hatchPet(eggType) {
+        let key = eggType === 'normal' ? 'petEgg' : 'superPetEgg';
+        if ((state.inv[key] || 0) < 1) return alert("คุณไม่มีไข่ชนิดนี้");
+        state.inv[key]--;
+
+        let petPool = [];
+        if (eggType === 'normal') {
+            petPool = [
+                { name: "Poring (โพริ่ง)", exp: 0.1, zeny: 0.05 },
+                { name: "Lunatic (ลูนาติก)", exp: 0.05, zeny: 0.1 },
+                { name: "Chonchon (ชอนชอน)", exp: 0.08, zeny: 0.08 }
+            ];
+        } else {
+            petPool = [
+                { name: "Baphomet Jr. (บาโฟเมตเด็ก)", exp: 0.4, zeny: 0.2 },
+                { name: "Osiris (โอสิริส)", exp: 0.5, zeny: 0.1 },
+                { name: "Golden Thief Bug (บอสแมลงทอง)", exp: 0.1, zeny: 0.5 }
+            ];
+        }
+
+        let selectedPet = petPool[Math.floor(Math.random() * petPool.length)];
+        state.activePet = selectedPet.name;
+        state.petBonus = { exp: selectedPet.exp, zeny: selectedPet.zeny };
+
+        systemNotify(`🥚 ฟักไข่สำเร็จ! ได้รับสัตว์เลี้ยง: [ ${selectedPet.name} ] ช่วยฟาร์มโบนัสอย่างถาวร`, "#e67e22");
+        updateUI(); saveToCloud();
+    }
+
+    // =======================================================
+    // ระบบการต่อสู้หลัก
+    // =======================================================
+    function changeMap() {
+        let selected = document.getElementById('mapSelect').value;
+        if(state.level < mapsData[selected].reqLvl) {
+            alert(`ต้องการเลเวลขั้นต่ำ Lv.${mapsData[selected].reqLvl}`);
+            document.getElementById('mapSelect').value = state.currentMap;
+            return;
+        }
+        state.currentMap = selected;
+        systemNotify(`🗺️ ย้ายแมพผจญภัยไปยัง: ${mapsData[selected].name}`, "#34495e");
+        saveToCloud();
+    }
+
+    function attackAction() {
+    let currentData = mapsData[state.currentMap || 'prontera'];
+    if (!currentData) return;
+    
+    // =========================================================
+    // ⚖️ ระบบคำนวณพลังแบบสัมพันธ์กับการจุติ (Rebirth Dynamic Scaling)
+    // =========================================================
+    let rebirthMultiplier = 1; // ค่าเริ่มต้นสำหรับคนยังไม่จุติ
+    
+    if (state.rebirthLvl && state.rebirthLvl > 0) {
+        // หากมีการจุติมากกว่า 0 ระบบจะใช้สูตรพลังมหาศาลทันที (ยิ่งจุติเยอะ ยิ่งคูณแรงเป็นทวีคูณ)
+        rebirthMultiplier = Math.pow(state.rebirthLvl + 1, 2.5) * 10000; 
+    }
+
+    // คำนวณโบนัส (ถ้ายังไม่จุติ ตัวคูณด้านหลังจะเป็น 1 พลังจะเท่าเดิมเป๊ะๆ)
+    let bonusExp = (1 + ((state.refine ? state.refine.weapon : 0) * 0.5) + ((state.inv && state.inv.godSword) ? state.inv.godSword * 5 : 0)) * rebirthMultiplier;
+    let bonusZeny = (1 + ((state.refine ? state.refine.armor : 0) * 0.3) + ((state.inv && state.inv.godShield) ? state.inv.godShield * 4 : 0)) * rebirthMultiplier;
+
+    // คำนวณรางวัลที่ได้รับ
+    let earnedZeny = Math.floor((Math.random() * (currentData.zenyMax - currentData.zenyMin) + currentData.zenyMin) * bonusZeny);
+    state.zeny = (state.zeny || 0) + earnedZeny;
+    state.exp = (state.exp || 0) + Math.floor(currentData.expGained * bonusExp);
+
+    // =========================================================
+    // 🎒 ระบบไอเทมเข้ากระเป๋าจริง (คงเดิม)
+    // =========================================================
+    if (!state.inv) state.inv = {};
+    let dropRoll = Math.random();
+    if (dropRoll < currentData.rate) {
+        let currentMapKey = state.currentMap || 'prontera';
+        if (currentMapKey === 'prontera') {
+            state.inv.trash = (state.inv.trash || 0) + 1;
+            if (Math.random() < 0.1) { 
+                state.inv.obb = (state.inv.obb || 0) + 1; 
+                if (typeof systemNotify === "function") systemNotify("📦 ดรอปไอเทมแรร์: Old Blue Box!", "#9b59b6"); 
+            }
+        } else if (currentMapKey === 'payon') {
+            state.inv.roughElu = (state.inv.roughElu || 0) + 1;
+            if (Math.random() < 0.08) state.inv.ticket = (state.inv.ticket || 0) + 1;
+        } else if (currentMapKey === 'orc') {
+            state.inv.iron = (state.inv.iron || 0) + 1;
+            if (Math.random() < 0.06) { 
+                state.inv.opb = (state.inv.opb || 0) + 1; 
+                if (typeof systemNotify === "function") systemNotify("📦 ดรอปไอเทมแรร์: Old Purple Box!", "#9b59b6"); 
+            }
+        } else if (currentMapKey === 'glast') {
+            state.inv.bluePotion = (state.inv.bluePotion || 0) + 1;
+            if (Math.random() < 0.1) state.inv.superPetEgg = (state.inv.superPetEgg || 0) + 1;
         }
     }
 
-    // =======================================================
-    // 🛠️ ส่วนคำสั่งของ TXAdmin ฟังก์ชันควบคุมระบบ (GM Command)
-    // =======================================================
-    function adminGiveItem() {
-        let item = document.getElementById('adminItemSelect').value;
-        let amt = parseInt(document.getElementById('adminItemAmt').value) || 1;
-        state.inv[item] = (state.inv[item] || 0) + amt;
-        systemNotify(`[TXAdmin] เสกไอเทม ${item} จำนวน ${amt} ชิ้นสำเร็จ!`, "#e74c3c");
-        updateUI(); saveToCloud();
+    // แสดงข้อความ Log
+    let logElement = document.getElementById("log");
+    if (logElement) {
+        if (state.rebirthLvl > 0) {
+            logElement.innerText = `⚡ จุติขั้นที่ ${state.rebirthLvl} พลังระเบิดมหาศาล! ได้รับ +${earnedZeny.toLocaleString()} Zeny`;
+        } else {
+            logElement.innerText = `⚔️ โจมตีมอนสเตอร์ใน ${currentData.name}! ได้รับ +${earnedZeny.toLocaleString()} Zeny`;
+        }
+    }
+
+    // ระบบเช็กเลเวลอัป
+    let nextLvlExp = (state.level || 1) * 100;
+    if (state.exp >= nextLvlExp) { 
+        state.exp = 0; 
+        state.level = (state.level || 1) + 1; 
+        if (typeof systemNotify === "function") systemNotify(`🎉 เลเวลอัปเป็น Lv.${state.level}!`, "#f1c40f"); 
     }
     
-    function adminSetLevel100() {
-        state.level = 100; state.exp = 0;
-        systemNotify(`[TXAdmin] ปรับเลเวลตัวละครเป็น 100 พร้อมทดสอบจุติ!`, "#e74c3c");
-        updateUI(); saveToCloud();
-    }
-
-    function adminAddZeny() {
-        state.zeny += 10000000;
-        systemNotify(`[TXAdmin] เสกเงินเข้าตัวละครสำเร็จ +10,000,000 Zeny`, "#e74c3c");
-        updateUI(); saveToCloud();
-    }
-
-    // =======================================================
-    // ระบบขับเคลื่อนตัวเกมหลัก (Game Mechanics)
-    // =======================================================
-    function attackAction() {
-        state.zeny += Math.floor(Math.random() * 40) + 10;
-        state.exp += 20;
-        if(Math.random() < 0.4) state.inv.trash++;
-        
-        // ตรวจสอบการอัปเลเวล
-        let nextLvlExp = state.level * 100;
-        if(state.exp >= nextLvlExp) {
-            state.exp = 0; state.level++;
-            systemNotify(`🎉 ยินดีด้วย เลเวลอัปเป็น Lv.${state.level} แล้ว!`, "#f1c40f");
-        }
-        document.getElementById("log").innerText = `⚔️ โจมตีสำเร็จ! ได้รับ EXP และเงิน Zeny`;
-        updateUI();
-    }
+    if (typeof updateUI === "function") updateUI();
+    if (typeof saveGame === "function") saveGame();
+}
 
     function toggleAutoFarm() {
-        isBotting = !isBotting;
-        if(autoTimer) clearInterval(autoTimer);
-        if(isBotting) autoTimer = setInterval(attackAction, 1000);
-        updateUI();
+    isBotting = !isBotting;
+    if(autoTimer) clearInterval(autoTimer);
+    
+    if(isBotting) {
+        // บอทสับไว วินาทีละ 10 ครั้ง
+        autoTimer = setInterval(attackAction, 100); 
     }
+    
+    updateUI();
+}
 
     function sellAllTrash() {
-        if(state.inv.trash <= 0) return alert("ไม่มีไอเทมขยะให้ขายในกระเป๋า");
-        let cashGained = state.inv.trash * 50;
-        state.zeny += cashGained;
-        state.inv.trash = 0;
-        systemNotify(`💰 ขายขยะให้ NPC ทั้งหมด ได้รับเงินมา ${cashGained} Zeny`, "#20bf6b");
+        let totalGain = (state.inv.trash * 50) + (state.inv.iron * 120) + (state.inv.roughElu * 200) + (state.inv.roughOri * 200);
+        if(totalGain === 0) return alert("ไม่มีเศษขยะหรือแร่หยาบให้ขาย");
+        state.zeny += totalGain;
+        state.inv.trash = 0; state.inv.iron = 0; state.inv.roughElu = 0; state.inv.roughOri = 0;
+        systemNotify(`💰 โล๊ะขายขยะเข้าคลัง NPC รับเงินสด +${totalGain.toLocaleString()} Zeny`, "#20bf6b");
+        updateUI(); saveToCloud();
+    }
+
+    // =======================================================
+    // 🎰 ระบบตู้สุ่มกาชาพอน
+    // =======================================================
+    function playGacha(costType) {
+        if(costType === 'ticket') {
+            if((state.inv.ticket || 0) < 1) return alert("คุณไม่มีตั๋วสุ่มกาชา");
+            state.inv.ticket--;
+        } else {
+            if(state.zeny < 100000) return alert("เงิน Zeny ไม่เพียงพอ");
+            state.zeny -= 100000;
+        }
+
+        let roll = Math.random();
+        let rewardText = ""; let displayColor = "#34495e";
+
+        if(roll < 0.05) { state.inv.cardAngel++; rewardText = "🌟 มหาเฮง! ได้รับการ์ดแรร์: Angeling Card"; displayColor = "#ff4757"; }
+        else if(roll < 0.15) { state.inv.opb += 2; rewardMsg = "🟣 ได้รับกล่องสมบัติม่วง Old Purple Box x2"; displayColor = "#9b59b6"; }
+        else if(roll < 0.40) { state.inv.bsBlessing++; rewardText = "🛡️ ได้รับใบกันแตก: Blacksmith Blessing"; displayColor = "#a55eea"; }
+        else { state.inv.ori += 2; state.inv.elu += 2; rewardText = "💎 ได้รับแร่ Oridecon x2 และ Elunium x2"; displayColor = "#2d3436"; }
+
+        let display = document.getElementById("gachaResultDisplay");
+        display.style.display = "block"; display.style.backgroundColor = displayColor; display.innerText = rewardText;
+        updateUI(); saveToCloud();
+    }
+
+    function processRefine() {
+        let type = document.getElementById('refineTarget').value;
+        let currentLvl = state.refine[type] || 0;
+        if(state.zeny < 50000) return alert("เงินไม่พอ");
+        if(type === 'weapon' && state.inv.ori < 1) return alert("ขาดแร่ Oridecon");
+        if(type === 'armor' && state.inv.elu < 1) return alert("ขาดแร่ Elunium");
+
+        let useBs = document.getElementById('useBsBlessingCheckbox').checked;
+        if(useBs && state.inv.bsBlessing < 1) return alert("ไม่มีใบกันแตก");
+
+        state.zeny -= 50000;
+        if(type === 'weapon') state.inv.ori--; else state.inv.elu--;
+
+        let successRate = currentLvl >= 4 ? 0.4 : 1.0;
+        if(Math.random() < successRate) { state.refine[type]++; systemNotify("🔨 ตีบวกสำเร็จ!", "#20bf6b"); }
+        else {
+            if(useBs) { state.inv.bsBlessing--; systemNotify("❌ แตกแต่ระดับคงที่เพราะใบกันแตกทำงาน", "#f39c12"); }
+            else { state.refine[type] = 0; systemNotify("💥 อุปกรณ์แตกสลายกลับสู่ +0!", "#eb3b5a"); }
+        }
         updateUI(); saveToCloud();
     }
 
     function triggerRebirth() {
-        if(state.level < 100) return alert("คุณต้องมีเลเวล 100 ขึ้นไปจึงจะทำสัญญารับการจุติพลังได้!");
-        state.rebirthLvl++; state.level = 1; state.exp = 0; state.zeny = 0;
-        systemNotify("✨ จุติสำเร็จ! พลังวิญญาณของคุณตื่นขึ้นแล้ว", "#d35400");
+        if(state.level < 100) return alert("เลเวลไม่ถึง 100");
+        state.rebirthLvl++; state.level = 1; state.exp = 0;
+        systemNotify("✨ จุติใหม่สำเร็จ พลังของสัตว์เลี้ยงและอุปกรณ์ยังคงอยู่ถาวร!", "#d35400");
         updateUI(); saveToCloud();
     }
 
-    // ระบบสลับหน้าต่างแท็บเมนู
     function switchTab(tabId) {
-        ['inv','stats','ranking','admin'].forEach(id => {
-            let el = document.getElementById(`tab-${id}`);
-            if(el) el.style.display = 'none';
-            let btn = document.getElementById(`btn-tab-${id}`);
-            if(btn) btn.classList.remove('active');
+        ['inv','gacha','refine','stats','ranking','admin'].forEach(id => {
+            document.getElementById(`tab-${id}`).style.display = 'none';
+            document.getElementById(`btn-tab-${id}`).classList.remove('active');
         });
         document.getElementById(`tab-${tabId}`).style.display = 'block';
         document.getElementById(`btn-tab-${tabId}`).classList.add('active');
-        if(tabId === 'ranking') fetchLeaderboard();
     }
 
-    // เรนเดอร์อัปเดตข้อมูลบนหน้าจอ
+    // ฟังก์ชันวาดค่าสถานะและจำนวนไอเทมลงสู่หน้าจอ UI ของผู้เล่นอย่างเรียลไทม์
     function updateUI() {
         document.getElementById("zeny").innerText = state.zeny.toLocaleString();
         document.getElementById("levelUI").innerText = state.level;
         document.getElementById("statRebirth").innerText = state.rebirthLvl;
-        document.getElementById("rebirthCountUI").innerText = state.rebirthLvl > 0 ? `[จุติ ${state.rebirthLvl}]` : "";
+        document.getElementById("rebirthCountUI").innerText = state.rebirthLvl > 0 ? `[จุติครั้งที่ ${state.rebirthLvl}]` : "";
         document.getElementById("expUI").innerText = state.exp;
         document.getElementById("maxExpUI").innerText = state.level * 100;
         document.getElementById("expFill").style.width = (state.exp / (state.level * 100)) * 100 + "%";
         
-        document.getElementById("itemTrash").innerText = state.inv.trash;
+        document.getElementById("weapRefineUI").innerText = `+${state.refine.weapon}`;
+        document.getElementById("armRefineUI").innerText = `+${state.refine.armor}`;
+        document.getElementById("activePetUI").innerText = state.activePet || "ไม่มี";
+
+        // ลิงก์แมปตัวแปรลง UI กระเป๋าเก็บของใช้งาน
+        document.getElementById("itemRedPotion").innerText = state.inv.redPotion || 0;
+        document.getElementById("itemWhitePotion").innerText = state.inv.whitePotion || 0;
+        document.getElementById("itemBluePotion").innerText = state.inv.bluePotion || 0;
+        document.getElementById("itemYggBerry").innerText = state.inv.yggBerry || 0;
+        
+        document.getElementById("itemObb").innerText = state.inv.obb || 0;
+        document.getElementById("itemOpb").innerText = state.inv.opb || 0;
+
+        document.getElementById("itemTicket").innerText = state.inv.ticket || 0;
+        document.getElementById("itemPetEgg").innerText = state.inv.petEgg || 0;
         document.getElementById("itemSuperPetEgg").innerText = state.inv.superPetEgg || 0;
+
+        document.getElementById("itemRoughOri").innerText = state.inv.roughOri || 0;
+        document.getElementById("itemRoughElu").innerText = state.inv.roughElu || 0;
+        document.getElementById("itemOri").innerText = state.inv.ori || 0;
+        document.getElementById("itemElu").innerText = state.inv.elu || 0;
+        document.getElementById("itemIron").innerText = state.inv.iron || 0;
+        document.getElementById("itemSteel").innerText = state.inv.steel || 0;
         document.getElementById("itemBsBlessing").innerText = state.inv.bsBlessing || 0;
+        document.getElementById("itemTrash").innerText = state.inv.trash || 0;
+
+        document.getElementById("itemCardPoring").innerText = state.inv.cardPoring || 0;
+        document.getElementById("itemCardWolf").innerText = state.inv.cardWolf || 0;
+        document.getElementById("itemCardOrc").innerText = state.inv.cardOrc || 0;
         document.getElementById("itemCardBapho").innerText = state.inv.cardBapho || 0;
+        document.getElementById("itemCardAngel").innerText = state.inv.cardAngel || 0;
+        document.getElementById("itemCardGtb").innerText = state.inv.cardGtb || 0;
+
+        document.getElementById("itemGodSword").innerText = state.inv.godSword || 0;
+        document.getElementById("itemGodShield").innerText = state.inv.godShield || 0;
+        document.getElementById("itemMjolnir").innerText = state.inv.mjolnir || 0;
         
         let btn = document.getElementById("autoBtn");
         btn.className = `btn-auto ${isBotting ? 'active' : ''}`;
-        btn.innerText = isBotting ? "🤖 ปิดระบบบอทฟาร์ม" : "🤖 เปิดระบบบอทฟาร์ม";
+        btn.innerText = isBotting ? "🤖 ปิดระบบบอทอัตโนมัติ" : "🤖 เปิดระบบบอทฟาร์ม";
     }
 
     function systemNotify(msg, color="#0fb9b1") {
         let container = document.getElementById('toast-container');
         let toast = document.createElement('div'); toast.className = 'toast';
         toast.style.borderLeftColor = color; toast.innerHTML = msg; container.appendChild(toast);
-        setTimeout(() => { toast.remove(); }, 3500);
+        setTimeout(() => { toast.remove(); }, 3000);
     }
-    
-    // ตั้งค่าบันทึกเซฟอัตโนมัติขึ้นคลาวด์ทุกๆ 10 วินาที
+
+    function adminGiveItem() {
+        let item = document.getElementById('adminItemSelect').value;
+        let amt = parseInt(document.getElementById('adminItemAmt').value) || 1;
+        state.inv[item] = (state.inv[item] || 0) + amt;
+        systemNotify(`[TXAdmin] เสกไอเทมสำเร็จ: ${item} จำนวน +${amt}`, "#e74c3c");
+        updateUI(); saveToCloud();
+    }
+
+    function adminAddZeny() { state.zeny += 10000000; updateUI(); saveToCloud(); }
+
     setInterval(saveToCloud, 10000);
     updateUI(); switchTab('inv');
+// ============================================================
+// [TXAdmin SYSTEM] ฟังก์ชันสำหรับให้ GM ค้นหาเพื่อแก้ไขผู้เล่นผ่านระบบ Cloud
+// ============================================================
+
+async function adminUpdateStats() {
+    let email = document.getElementById('adminTargetEmail').value.trim();
+    let lvl = parseInt(document.getElementById('adminSetLvl').value);
+    let reb = parseInt(document.getElementById('adminSetRebirth').value);
+    
+    if(!email) return alert("กรุณาระบุอีเมลผู้เล่นที่ต้องการแก้ไข!");
+    if(isNaN(lvl) || isNaN(reb)) return alert("กรุณากรอกตัวเลขเลเวลและจำนวนครั้งจุติให้ครบถ้วน!");
+    
+    try {
+        let usersRef = db.collection("users");
+        let query = await usersRef.where("email", "==", email).get();
+        
+        if(query.empty) return alert("ไม่พบผู้เล่นที่ใช้温馨อีเมลนี้ในระบบฐานข้อมูลคลาวด์!");
+        
+        query.forEach(doc => {
+            let data = doc.data();
+            let saveData = JSON.parse(data.saveData || "{}");
+            
+            // เขียนค่าใหม่ทับลงไปในก้อน Save ข้อมูลหลัก
+            saveData.level = lvl;
+            saveData.rebirthLvl = reb;
+            saveData.exp = 0; // รีเซ็ต EXP ป้องกันบัคหลอดค้าง
+            
+            usersRef.doc(doc.id).update({
+                saveData: JSON.stringify(saveData),
+                level: lvl,
+                rebirthLvl: reb
+            });
+        });
+        
+        alert(`💾 ดำเนินการอัปเดตข้อมูล: บัญชี ${email} ถูกปรับเป็น Lv.${lvl} และ จุติ ${reb} เรียบร้อยแล้ว! (ผู้เล่นจะได้รับการอัปเดตเมื่อรีเฟรชหน้าเกม)`);
+    } catch(e) { alert("เกิดข้อผิดพลาดจากระบบหลังบ้าน: " + e.message); }
+}
+
+async function adminUpdateStats() {
+    let email = document.getElementById('adminTargetEmail').value.trim();
+    let lvl = parseInt(document.getElementById('adminSetLvl').value);
+    let reb = parseInt(document.getElementById('adminSetRebirth').value);
+    
+    if(!email) return alert("กรุณาระบุอีเมลผู้เล่นที่ต้องการแก้ไข!");
+    if(isNaN(lvl) || isNaN(reb)) return alert("กรุณากรอกตัวเลขเลเวลและจำนวนครั้งจุติให้ครบถ้วน!");
+    
+    try {
+        let usersRef = db.collection("users");
+        let query = await usersRef.where("email", "==", email).get();
+        
+        if(query.empty) return alert("ไม่พบผู้เล่นที่ใช้อีเมลนี้ในระบบฐานข้อมูลคลาวด์!");
+        
+        query.forEach(doc => {
+            let data = doc.data();
+            let saveData = JSON.parse(data.saveData || "{}");
+            
+            saveData.level = lvl;
+            saveData.rebirthLvl = reb;
+            saveData.exp = 0; 
+            
+            usersRef.doc(doc.id).update({
+                saveData: JSON.stringify(saveData),
+                level: lvl,
+                rebirthLvl: reb
+            });
+        });
+        
+        alert(`💾 ดำเนินการอัปเดตข้อมูล: บัญชี ${email} ถูกปรับเป็น Lv.${lvl} และ จุติ ${reb} เรียบร้อยแล้ว!`);
+    } catch(e) { alert("เกิดข้อผิดพลาดจากระบบหลังบ้าน: " + e.message); }
+}
+
+async function adminGiveItemToTarget() {
+    let email = document.getElementById('adminTargetEmail').value.trim();
+    let item = document.getElementById('adminItemSelect').value;
+    let amt = parseInt(document.getElementById('adminItemAmt').value) || 1;
+    
+    if(!email) return alert("กรุณาระบุอีเมลผู้เล่นที่จะรับไอเทม!");
+    
+    try {
+        let usersRef = db.collection("users");
+        let query = await usersRef.where("email", "==", email).get();
+        
+        if(query.empty) return alert("ไม่พบผู้เล่นที่ใช้อีเมลนี้ในระบบ!");
+        
+        query.forEach(doc => {
+            let data = doc.data();
+            let saveData = JSON.parse(data.saveData || "{}");
+            
+            if(!saveData.inv) saveData.inv = {};
+            saveData.inv[item] = (saveData.inv[item] || 0) + amt;
+            
+            usersRef.doc(doc.id).update({
+                saveData: JSON.stringify(saveData)
+            });
+        });
+        
+        alert(`🎁 เสกสำเร็จ: ส่งไอเทม [${item}] จำนวน ${amt} ชิ้น เรียบร้อย!`);
+    } catch(e) { alert("เกิดข้อผิดพลาดในการเสกของ: " + e.message); }
+}
 </script>
 </body>
 </html>
